@@ -37,6 +37,7 @@ def create_task(
     task = Task(
         title=task_data.title,
         description=task_data.description,
+        priority=task_data.priority,
     )
 
     try:

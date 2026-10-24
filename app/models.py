@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -8,6 +8,13 @@ from app.db import Base
 
 class Task(Base):
     __tablename__ = "tasks"
+    
+    __table_args__ = (
+        CheckConstraint(
+            "priority IN (1, 2, 3)",
+            name="ck_tasks_priority",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -31,4 +38,10 @@ class Task(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+    priority: Mapped[int] = mapped_column(
+    Integer,
+    default=3,
+    server_default="3",
+    nullable=False,
     )

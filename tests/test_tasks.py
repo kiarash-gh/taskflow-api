@@ -116,3 +116,28 @@ def test_create_task_rejects_long_title(client):
     )
 
     assert response.status_code == 422
+
+
+def test_create_task_with_priority(client):
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "High priority task",
+            "priority": 1,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["priority"] == 1
+
+
+def test_create_task_rejects_invalid_priority(client):
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "Invalid priority",
+            "priority": 5,
+        },
+    )
+
+    assert response.status_code == 422
