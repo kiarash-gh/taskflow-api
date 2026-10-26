@@ -1,12 +1,13 @@
+import logging
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Query
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models import Task
 from app.schemas import TaskCreate, TaskResponse, TaskUpdate
-from sqlalchemy import select
-from fastapi import Query
-import logging
 from app.logging_config import configure_logging
 
 
@@ -15,6 +16,20 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="TaskFlow API")
+
+@app.exception_handler(Exception)
+async def handle_unexpected_exception(request, exc: Exception):
+    logger.exception(
+        "Unhandled exception: method=%s path=%s",
+        request.method,
+        request.url.path,
+        exc_info=exc,
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred."},
+    )
 
 
 def get_db():
