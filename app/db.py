@@ -11,7 +11,10 @@ class Base(DeclarativeBase):
 load_dotenv()
 
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+if os.getenv("RUN_POSTGRES_INTEGRATION") == "1":
+    DATABASE_URL = os.environ["TEST_DATABASE_URL"]
+else:
+    DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(
     DATABASE_URL,

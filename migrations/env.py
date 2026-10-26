@@ -17,12 +17,18 @@ from app import models
 # access to the values within the .ini file in use.
 config = context.config
 
+
 load_dotenv()
 
-config.set_main_option(
-    "sqlalchemy.url",
-    os.environ["DATABASE_URL"].replace("%", "%%"),
-)
+database_url = os.environ.get("TEST_DATABASE_URL") if os.environ.get(
+    "RUN_POSTGRES_INTEGRATION"
+) == "1" else os.environ.get("DATABASE_URL")
+
+if database_url:
+    config.set_main_option(
+        "sqlalchemy.url",
+        database_url.replace("%", "%%"),
+    )
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
