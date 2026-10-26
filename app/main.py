@@ -2,7 +2,7 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi import Query
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
@@ -120,32 +120,69 @@ def update_task(
     task_data: TaskUpdate,
     db: Session = Depends(get_db),
 ):
-    task = db.get(Task, task_id)
+    updates = task_data.model_dump(
+        exclude_unset=True,
+        exclude={"version"},
+    )
 
-    if task is None:
+    if not updates:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one field to update is required.",
         )
 
-    updates = task_data.model_dump(exclude_unset=True)
-
-    for field, value in updates.items():
-        setattr(task, field, value)
-
     try:
+        statement = (
+            update(Task)
+            .where(
+                Task.id == task_id,
+                Task.version == task_data.version,
+            )
+            .values(
+                **updates,
+                version=Task.version + 1,
+            )
+            .returning(Task.id)
+        )
+
+        updated_id = db.execute(statement).scalar_one_or_none()
+
+        if updated_id is None:
+            db.rollback()
+
+            if db.get(Task, task_id) is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Task not found.",
+                )
+
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Task was modified by another request. Fetch it and retry.",
+            )
+
         db.commit()
+
+        task = db.get(Task, task_id)
         db.refresh(task)
-        logger.info("Task updated successfully: task_id=%s", task.id)
+
+        logger.info(
+            "Task updated successfully: task_id=%s version=%s",
+            task.id,
+            task.version,
+        )
+
+        return task
+
     except SQLAlchemyError:
         db.rollback()
-        logger.exception("Database error while updating a task")
+        logger.exception("Database error while updating task")
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not update task.",
         )
 
-    return task
 
 
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)

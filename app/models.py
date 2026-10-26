@@ -45,3 +45,9 @@ class Task(Base):
     server_default="3",
     nullable=False,
     )
+    version: Mapped[int] = mapped_column(
+    Integer,
+    default=1,
+    server_default="1",
+    nullable=False,
+    )

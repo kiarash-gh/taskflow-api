@@ -17,9 +17,12 @@ class TaskResponse(BaseModel):
     priority: int
     completed: bool
     created_at: datetime
+    version: int
+
 
 
 class TaskUpdate(BaseModel):
+    version: int = Field(ge=1)
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
     priority: int | None = Field(default=None, ge=1, le=3)

@@ -88,7 +88,7 @@ def test_update_task(client):
 
     response = client.patch(
         f"/tasks/{task_id}",
-        json={"completed": True},
+        json={"version": 1, "completed": True},
     )
 
     assert response.status_code == 200
@@ -182,8 +182,31 @@ def test_update_task_can_clear_description(client):
 
     response = client.patch(
         f"/tasks/{task_id}",
-        json={"description": None},
+        json={"version": 1, "description": None},
     )
 
     assert response.status_code == 200
     assert response.json()["description"] is None
+    assert response.json()["version"] == 2
+
+
+def test_update_task_rejects_stale_version(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task"},
+    )
+    task_id = create_response.json()["id"]
+
+    first_update = client.patch(
+        f"/tasks/{task_id}",
+        json={"version": 1, "priority": 1},
+    )
+    assert first_update.status_code == 200
+    assert first_update.json()["version"] == 2
+
+    stale_update = client.patch(
+        f"/tasks/{task_id}",
+        json={"version": 1, "priority": 2},
+    )
+
+    assert stale_update.status_code == 409
