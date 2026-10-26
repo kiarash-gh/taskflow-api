@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TaskCreate(BaseModel):
@@ -24,3 +24,10 @@ class TaskUpdate(BaseModel):
     description: str | None = None
     priority: int | None = Field(default=None, ge=1, le=3)
     completed: bool | None = None
+
+    @field_validator("title", "priority", "completed", mode="before")
+    @classmethod
+    def reject_null_values(cls, value):
+        if value is None:
+            raise ValueError("This field cannot be null.")
+        return value

@@ -141,3 +141,49 @@ def test_create_task_rejects_invalid_priority(client):
     )
 
     assert response.status_code == 422
+
+
+def test_update_task_rejects_null_title(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Original title"},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"title": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_task_rejects_null_priority(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task"},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"priority": None},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_task_can_clear_description(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task", "description": "Old description"},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"description": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["description"] is None

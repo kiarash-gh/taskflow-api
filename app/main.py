@@ -1,13 +1,18 @@
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-
 from app.db import SessionLocal
 from app.models import Task
 from app.schemas import TaskCreate, TaskResponse, TaskUpdate
 from sqlalchemy import select
 from fastapi import Query
+import logging
+from app.logging_config import configure_logging
 
+
+configure_logging()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="TaskFlow API")
 
@@ -44,8 +49,10 @@ def create_task(
         db.add(task)
         db.commit()
         db.refresh(task)
+        logger.info("Task created successfully: task_id=%s", task.id)
     except SQLAlchemyError:
         db.rollback()
+        logger.exception("Database error while creating a task")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not create task.",
@@ -114,8 +121,10 @@ def update_task(
     try:
         db.commit()
         db.refresh(task)
+        logger.info("Task updated successfully: task_id=%s", task.id)
     except SQLAlchemyError:
         db.rollback()
+        logger.exception("Database error while updating a task")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not update task.",
@@ -140,8 +149,10 @@ def delete_task(
     try:
         db.delete(task)
         db.commit()
+        logger.info("Task deleted successfully: task_id=%s", task.id)
     except SQLAlchemyError:
         db.rollback()
+        logger.exception("Database error while deleting a task")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete task.",
